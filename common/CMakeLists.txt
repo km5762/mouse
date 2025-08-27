@@ -1,0 +1,18 @@
+file(GLOB_RECURSE COMMON_SOURCES
+    CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+)
+
+file(GLOB_RECURSE COMMON_HEADERS
+    CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp
+)
+
+add_library(common STATIC
+    ${COMMON_SOURCES}
+    ${COMMON_HEADERS}
+)
+
+target_include_directories(common PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
