@@ -31,7 +31,7 @@ public:
   UdpSocket(const UdpSocket &) = delete;
   auto operator=(const UdpSocket &) -> UdpSocket & = delete;
   ~UdpSocket() {
-    if (socket_ != -1 && ::close(socket_) != 0) {
+    if (fd_ != -1 && ::close(fd_) != 0) {
       std::cerr << "~UdpSocket: Failed to close socket: " << strerror(errno)
                 << "\n";
     }
@@ -41,12 +41,13 @@ public:
   [[nodiscard]] auto write(const Message &message) -> std::error_code;
   auto address()
       -> std::expected<std::reference_wrapper<const Address>, std::error_code>;
+  [[nodiscard]] int fd() const { return fd_; };
 
 private:
   static constexpr std::size_t default_buffer_size{4096};
   Address address_;
   bool bound_{false};
-  int socket_{-1};
+  int fd_{-1};
   bool ephemeral_{false};
   std::vector<std::byte> buffer_{default_buffer_size};
 };
