@@ -2,13 +2,13 @@
 #include <algorithm>
 #include <cstring>
 #include <expected>
-#include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <span>
 #include <sys/socket.h>
 #include <system_error>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 struct Message {
@@ -26,14 +26,30 @@ class UdpSocket {
 public:
   UdpSocket() = default;
   explicit UdpSocket(std::size_t buffer_size) : buffer_(buffer_size) {};
-  UdpSocket(UdpSocket &&) = delete;
-  auto operator=(UdpSocket &&) -> UdpSocket & = delete;
+  UdpSocket(UdpSocket &&socket) noexcept
+      : address_{socket.address_}, bound_(socket.bound_),
+        fd_(std::exchange(socket.fd_, -1)), ephemeral_(socket.ephemeral_),
+        buffer_(std::move(socket.buffer_)) {}
+  auto operator=(UdpSocket &&socket) -> UdpSocket & {
+    if (this != &socket) {
+      if (fd_ != -1) {
+        ::close(fd_);
+      }
+
+      address_ = socket.address_;
+      bound_ = socket.bound_;
+      fd_ = std::exchange(socket.fd_, -1);
+      ephemeral_ = socket.ephemeral_;
+      buffer_ = std::move(socket.buffer_);
+    }
+
+    return *this;
+  }
   UdpSocket(const UdpSocket &) = delete;
   auto operator=(const UdpSocket &) -> UdpSocket & = delete;
   ~UdpSocket() {
-    if (fd_ != -1 && ::close(fd_) != 0) {
-      std::cerr << "~UdpSocket: Failed to close socket: " << strerror(errno)
-                << "\n";
+    if (fd_ != -1) {
+      ::close(fd_);
     }
   }
   auto bind(std::span<const Address> addresses) -> std::error_code;
